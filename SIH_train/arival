@@ -1,0 +1,61 @@
+import heapq
+
+# Train: (arrival_time, priority, departure_time, train_id, train_type)
+train_data = [
+    (9, 1, 9.30, "T1", "Superfast"),
+    (11, 3, 12, "T2", "Express"),
+    (10, 3, 11, "T3", "Freight"),
+    (3, 10, 11, "T4", "Freight"),
+    (1, 18, 20, "T5", "Superfast"),
+    # Add more trains as required
+]
+platforms = 6  # Set 2 or 1 for other scenarios
+
+def precedence_schedule(trains, n_platforms):
+    # Sort by arrival_time, then priority (heapq for waiting queue)
+    trains.sort()
+    heap = []  # [(departure_time, platform_id)]
+    waiting = []
+    i = 0
+    t = min(train[0] for train in trains)
+    scheduled = []
+    free_platforms = list(range(1, n_platforms + 1))
+    
+    while i < len(trains) or waiting:
+        # Add newly arrived trains into waiting queue
+        while i < len(trains) and trains[i][0] <= t:
+            # Priority queue: (priority, arrival_time, index, train_tuple)
+            heapq.heappush(waiting, (trains[i][1], trains[i][0], i, trains[i]))
+            i += 1
+        # Release platforms as trains depart
+        while heap and heap[0][0] <= t:
+            _, plat = heapq.heappop(heap)
+            free_platforms.append(plat)
+        # Assign free platforms to highest priority and earliest arrived waiting trains
+        while free_platforms and waiting:
+            _, _, _, train = heapq.heappop(waiting)
+            plat = free_platforms.pop(0)
+            heapq.heappush(heap, (train[2], plat))
+            scheduled.append(
+                f"Train {train[3]} ({train[4]}) assigned to platform {plat} at {t} (priority {train[1]})"
+            )
+        # Move to next event: train arrival or departure
+        next_events = []
+        if i < len(trains):
+            next_events.append(trains[i][0])
+        if heap:
+            next_events.append(heap[0][0])
+        if next_events:
+            t = min(next_events)
+        else:
+            break
+    # Any unassigned trains
+    for _, _, _, train in waiting:
+        scheduled.append(
+            f"Train {train[3]} ({train[4]}) must wait longer (priority {train[1]})"
+        )
+    return scheduled
+
+recommendation = precedence_schedule(train_data, platforms)
+for r in recommendation:
+    print(r)

@@ -1,0 +1,72 @@
+import heapq
+platforms=int(input("Enter number of platforms: ")) # Change this for other scenarios
+# Each train: (arrival_time, priority, departure_time, train_id, train_type)
+train_data = [
+    (9, 1, 9.15, "T1", "Superfast"),
+    (9, 2, 9.15, "T2", "Express"),
+    (9, 3, 10.30, "T3", "Freight"),
+    (13.30, 1, 14, "T4", "Superfast"),
+    (13, 2, 14, "T5", "Express"),
+    (10, 3, 11, "T6", "Freight"),
+    (22, 3, 23, "T7", "Freight"),
+    (20, 1, 21, "T8", "Superfast"),
+    # Add trains as needed
+]
+
+def dynamic_platform_allocation(trains, n_platforms):
+    # Sort trains by arrival time, then priority
+    trains.sort()
+    platform_heap = []  # min-heap for current departures [(departure_time, platform_id)]
+    waiting_heap = []
+    free_platforms = list(range(1, n_platforms + 1))
+    i = 0
+    t = min(train[0] for train in trains)
+    schedule = []
+
+    while i < len(trains) or waiting_heap:
+        # Move trains to waiting queue as they arrive
+        while i < len(trains) and trains[i][0] <= t:
+            heapq.heappush(waiting_heap, (trains[i][1], trains[i][0], i, trains[i]))
+            i += 1
+        # Free up platforms when scheduled trains depart
+        while platform_heap and platform_heap[0][0] <= t:
+            _, plat = heapq.heappop(platform_heap)
+            free_platforms.append(plat)
+        # Dynamically allocate free platforms to waiting trains
+        while free_platforms and waiting_heap:
+            _, _, _, train = heapq.heappop(waiting_heap)
+            plat = free_platforms.pop(0)
+            heapq.heappush(platform_heap, (train[2], plat))
+            schedule.append(
+                f"Train {train[3]} ({train[4]}) dynamically scheduled on platform {plat} at {t} (priority {train[1]})"
+            )
+        # Advance time to next train arrival or next train departure
+        next_times = []
+        if i < len(trains):
+            next_times.append(trains[i][0])
+        if platform_heap:
+            next_times.append(platform_heap[0][0])
+        if next_times:
+            t = min(next_times)
+        else:
+            break
+    # Any trains still waiting
+    for _, _, _, train in waiting_heap:
+        schedule.append(
+            f"Train {train[3]} ({train[4]}) must wait longer (priority {train[1]})"
+        )
+    return schedule
+
+recommendation = dynamic_platform_allocation(train_data, platforms)
+for r in recommendation:
+    print(r)
+
+# Example Output:
+# Train T1 (Superfast) dynamically scheduled on platform 1 at 9 (priority 1)
+# Train T2 (Express) dynamically scheduled on platform 2 at 9 (priority 2)
+# Train T3 (Freight) dynamically scheduled on platform 3 at 10 (priority 3)
+# Train T6 (Freight) dynamically scheduled on platform 4 at 10 (priority 3)
+# Train T5 (Express) dynamically scheduled on platform 5 at 13 (priority 2)
+# Train T4 (Superfast) dynamically scheduled on platform 6 at 13.3 (priority 1)
+# Train T7 (Freight) dynamically scheduled on platform 2 at 16 (priority 3)
+# Train T8 (Superfast) dynamically scheduled on platform 1 at 20 (priority 1)

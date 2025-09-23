@@ -1,0 +1,41 @@
+import heapq as hq
+
+# Train structure: (priority, arrival_time, departure_time, train_id, train_type)
+train_data = [
+    (1, 9, 10, "T1", "Superfast"),
+    (2, 9, 12, "T2", "Express"),
+    (3, 10, 11, "T3", "Freight"),
+    (1, 18, 20, "T4", "Superfast"),
+    # ... add up to 10
+]
+platforms = 6  # Or set to 2/1 for other scenarios
+
+def precedence_schedule(trains, n_platforms):
+    # Sort trains by priority, then by arrival time
+    trains.sort()
+    heap = []  # tracks (departure_time, platform_id)
+    recommendations = []
+
+    # Initially, all platforms/tracks are free
+    free_platforms = list(range(1, n_platforms + 1))
+    
+    for train in trains:
+        # Remove platforms that have become free
+        while heap and heap[0][0] <= train[1]:
+            _, freed = hq.heappop(heap)
+            free_platforms.append(freed)
+        if free_platforms:
+            plat = free_platforms.pop(0)
+            hq.heappush(heap, (train[2], plat))
+            recommendations.append(
+                f"Train {train[3]} ({train[4]}) assigned to platform {plat} (priority {train[0]})"
+            )
+        else:
+            recommendations.append(
+                f"Train {train[3]} ({train[4]}) must wait (priority {train[0]})"
+            )
+    return recommendations
+
+recommendation = precedence_schedule(train_data, platforms)
+for r in recommendation:
+    print(r)
